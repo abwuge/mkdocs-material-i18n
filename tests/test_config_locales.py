@@ -82,8 +82,7 @@ def test_locale_validation_lang_required():
 
     # Should have validation error for missing lang
     assert len(errors) == 1
-    assert isinstance(errors[0], str)
-    assert "lang is required" in errors[0]
+    assert "lang is required" in str(errors[0])
 
 
 def test_locale_validation_default_link():

@@ -25,7 +25,7 @@ def test_single_locale_warning():
     # Should have no errors but warning about only 1 locale
     assert len(errors) == 0
     assert len(warnings) == 1
-    assert "only 1 locale configured" in warnings[0]
+    assert "only 1 locale configured" in str(warnings[0])
 
 
 def test_no_warning_with_multiple_locales():

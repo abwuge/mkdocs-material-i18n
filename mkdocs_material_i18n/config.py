@@ -18,7 +18,7 @@ class LocaleConfig(base.Config):
 
         # lang is required
         if not self.lang:
-            errors.append("lang is required for each locale")
+            errors.append(("locales", "lang is required for each locale"))
         else:
             # Set default link if not provided
             if not self.link:
@@ -34,7 +34,8 @@ class LocaleConfig(base.Config):
 class MaterialI18nPluginConfig(base.Config):
     """Configuration schema for Material i18n Plugin"""
 
-    default_locale = config_options.Type(str, default="")
+    default_lang = config_options.Type(str, default="")
+    default_locale = config_options.SubConfig(LocaleConfig, validate=False)
     locales = config_options.ListOfItems(
         config_options.SubConfig(LocaleConfig), default=[]
     )
@@ -44,21 +45,61 @@ class MaterialI18nPluginConfig(base.Config):
         # Call parent validation first
         errors, warnings = super().validate()
 
-        locales_count = len(self.locales)
-        # Error if no locales configured
-        if locales_count == 0:
-            errors.append("At least 1 locale must be configured")
-        # Warn if only one locale configured
-        elif locales_count == 1:
+        # Validate locales count
+        if not self.locales:
+            errors.append(("locales", "At least 1 locale must be configured"))
+            return errors, warnings
+        elif len(self.locales) == 1:
             warnings.append(
-                "You have only 1 locale configured. This plugin is designed for multi-language sites and may not be necessary for single-language sites."
+                (
+                    "locales",
+                    "You have only 1 locale configured. This plugin is designed for multi-language sites and may not be necessary for single-language sites.",
+                )
             )
 
-        # Set default_locale to first locale's lang if not provided
-        if not self.default_locale and self.locales:
-            self.default_locale = self.locales[0].lang
+        # Set default_lang if not provided
+        if not self.default_lang and not self.default_locale.lang:
+            self.default_lang = self.locales[0].lang
+
+        errors.extend(self._validate_default_locale())
 
         return errors, warnings
+
+    def _validate_default_locale(self):
+        """Validate default_locale configuration and set defaults if needed"""
+        errors = []
+
+        # Find the locale that matches default_lang
+        matching_locale = self._find_locale_by_lang(self.default_lang)
+
+        if not matching_locale:
+            errors.append(
+                (
+                    "default_locale",
+                    f"Default locale '{self.default_lang}' does not match any configured locale's lang",
+                )
+            )
+            return errors
+
+        # Handle default_locale configuration
+        if not self.default_locale.lang:
+            self.default_locale = matching_locale
+        elif self.default_locale != matching_locale:
+            errors.append(
+                (
+                    "default_locale",
+                    "Default locale does not match configured default_lang related locale",
+                )
+            )
+
+        return errors
+
+    def _find_locale_by_lang(self, lang):
+        """Find a locale by its lang attribute"""
+        for locale in self.locales:
+            if locale.lang == lang:
+                return locale
+        return None
 
     def process_locales_config(self, config: MkDocsConfig) -> MkDocsConfig:
         """Process locales configuration and set Material theme's alternate config"""
