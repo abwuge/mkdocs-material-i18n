@@ -22,7 +22,17 @@ i18n = "mkdocs_material_i18n.plugin:MaterialI18nPlugin"
 [tool.pdm]
 distribution = true
 
+[tool.pdm.scripts]
+test = {call = "tests.test:run_test"}
+
 [dependency-groups]
 dev = [
     "pytest",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = ["-v", "--tb=short"]
