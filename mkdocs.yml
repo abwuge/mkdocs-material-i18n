@@ -1,0 +1,16 @@
+site_name: MkDocs Material i18n
+
+theme:
+  name: material
+
+plugins:
+  - i18n
+
+extra:
+  alternate:
+    - name: 中文
+      link: /zh/
+      lang: zh
+    - name: English
+      link: /en/
+      lang: en

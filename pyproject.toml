@@ -1,0 +1,28 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+name = "mkdocs-material-i18n"
+version = "0.1.0"
+description = "Enhances internationalization (i18n) support for MkDocs Material."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "mkdocs-material>=9.6.14",
+]
+authors = [
+    {name = "hxwu", email = "abwuge@163.com"},
+]
+license = {text = "MIT"}
+
+[project.entry-points."mkdocs.plugins"]
+i18n = "mkdocs_material_i18n.plugin:MaterialI18nPlugin"
+
+[tool.pdm]
+distribution = true
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
