@@ -1,0 +1,14 @@
+site_name: Test Site
+
+theme:
+  name: material
+
+plugins:
+  - i18n:
+      locales:
+        - name: English
+          link: /en/
+          lang: en
+        - name: 中文
+          link: /zh/
+          lang: zh

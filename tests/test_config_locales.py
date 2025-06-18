@@ -1,22 +1,24 @@
 """Tests for MkDocs Material i18n Plugin"""
 
-from mkdocs_material_i18n.plugin import MaterialI18nPlugin
+from mkdocs.config import load_config
 
 
 def test_plugin_with_locales():
     """Test that locales configuration is converted to alternate configuration"""
-    plugin = MaterialI18nPlugin()
-    plugin.load_config(
-        {
-            "locales": [
-                {"name": "中文", "link": "/zh/", "lang": "zh"},
-                {"name": "English", "link": "/en/", "lang": "en"},
-            ]
-        }
+    # Load config with specific locales
+    config = load_config(
+        "tests/mkdocs.yml",
+        plugins={
+            "i18n": {
+                "locales": [
+                    {"name": "中文", "link": "/zh/", "lang": "zh"},
+                    {"name": "English", "link": "/en/", "lang": "en"},
+                ]
+            },
+        },
     )
 
-    # Mock mkdocs config
-    config = {}
+    plugin = config["plugins"]["i18n"]
 
     # Call the method
     result_config = plugin.on_config(config)
@@ -41,35 +43,43 @@ def test_plugin_with_locales():
 
 def test_plugin_without_locales():
     """Test that config is unchanged when no locales are configured"""
-    plugin = MaterialI18nPlugin()
-    plugin.load_config({"locales": []})
+    # Load config with empty locales
+    config = load_config(
+        "tests/mkdocs.yml",
+        plugins={
+            "i18n": {"locales": []},
+        },
+    )
 
-    # Mock mkdocs config
-    config = {"site_name": "Test Site"}
+    plugin = config["plugins"]["i18n"]
 
     # Call the method
+    original_config = config.copy()
     result_config = plugin.on_config(config)
 
     # Verify that config is unchanged
-    assert result_config == {"site_name": "Test Site"}
+    assert result_config == original_config
 
 
 def test_plugin_preserves_existing_extra():
     """Test that existing extra configuration is preserved"""
-    plugin = MaterialI18nPlugin()
-    plugin.load_config({"locales": [{"name": "English", "link": "/en/", "lang": "en"}]})
-
-    # Mock mkdocs config with existing extra
-    config = {
-        "extra": {
+    # Load config with single locale
+    config = load_config(
+        "tests/mkdocs.yml",
+        plugins={
+            "i18n": {"locales": [{"name": "English", "link": "/en/", "lang": "en"}]},
+        },
+        extra={
             "social": [
                 {
                     "icon": "fontawesome/brands/github",
                     "link": "https://github.com/example",
                 }
             ]
-        }
-    }
+        },
+    )
+
+    plugin = config["plugins"]["i18n"]
 
     # Call the method
     result_config = plugin.on_config(config)
@@ -167,21 +177,21 @@ def test_locale_validation_no_defaults_when_provided():
 
 def test_plugin_config_validation_integration():
     """Test that plugin works with locales that use default values"""
-    plugin = MaterialI18nPlugin()
-
     # Load config with minimal locale info (only lang)
-    plugin.load_config(
-        {
-            "locales": [
-                {"lang": "en"},  # Only lang provided
-                {"lang": "zh", "name": "中文"},  # lang and name provided
-                {"lang": "fr", "link": "/french/"},  # lang and link provided
-            ]
-        }
+    config = load_config(
+        "tests/mkdocs.yml",
+        plugins={
+            "i18n": {
+                "locales": [
+                    {"lang": "en"},  # Only lang provided
+                    {"lang": "zh", "name": "中文"},  # lang and name provided
+                    {"lang": "fr", "link": "/french/"},  # lang and link provided
+                ]
+            },
+        },
     )
 
-    # Mock mkdocs config
-    config = {}
+    plugin = config["plugins"]["i18n"]
 
     # Call the method
     result_config = plugin.on_config(config)
@@ -203,6 +213,7 @@ def test_plugin_config_validation_integration():
     assert alternate[1]["link"] == "/zh/"  # default link
     assert alternate[1]["lang"] == "zh"
 
-    # Verify third locale (link provided, name defaulted)    assert alternate[2]["name"] == "fr"  # default name
+    # Verify third locale (link provided, name defaulted)
+    assert alternate[2]["name"] == "fr"  # default name
     assert alternate[2]["link"] == "/french/"  # provided link
     assert alternate[2]["lang"] == "fr"
