@@ -5,17 +5,12 @@ from mkdocs_material_i18n.plugin import MaterialI18nPlugin
 
 def test_default_locale_auto_set():
     """Test that default_locale is automatically set to first locale's lang"""
-    from mkdocs_material_i18n.config import MaterialI18nPluginConfig, LocaleConfig
+    from mkdocs_material_i18n.config import MaterialI18nPluginConfig
 
     plugin_config = MaterialI18nPluginConfig()
 
-    # Create locale configs
-    locale1 = LocaleConfig()
-    locale1.lang = "en"
-    locale2 = LocaleConfig()
-    locale2.lang = "zh"
-
-    plugin_config.locales = [locale1, locale2]
+    # Load locale configs using dictionary format
+    plugin_config.load_dict({"locales": [{"lang": "en"}, {"lang": "zh"}]})
     # default_locale not provided
 
     errors, warnings = plugin_config.validate()
@@ -28,18 +23,17 @@ def test_default_locale_auto_set():
 
 def test_default_locale_provided():
     """Test that provided default_locale is not overridden"""
-    from mkdocs_material_i18n.config import MaterialI18nPluginConfig, LocaleConfig
+    from mkdocs_material_i18n.config import MaterialI18nPluginConfig
 
     plugin_config = MaterialI18nPluginConfig()
 
-    # Create locale configs
-    locale1 = LocaleConfig()
-    locale1.lang = "en"
-    locale2 = LocaleConfig()
-    locale2.lang = "zh"
-
-    plugin_config.locales = [locale1, locale2]
-    plugin_config.default_locale = "zh"  # Explicitly set to second locale
+    # Load locale configs using dictionary format
+    plugin_config.load_dict(
+        {
+            "locales": [{"lang": "en"}, {"lang": "zh"}],
+            "default_locale": "zh",  # Explicitly set to second locale
+        }
+    )
 
     errors, warnings = plugin_config.validate()
 

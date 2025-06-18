@@ -5,15 +5,12 @@ from mkdocs_material_i18n.plugin import MaterialI18nPlugin
 
 def test_single_locale_warning():
     """Test that warning is shown when only one locale is configured"""
-    from mkdocs_material_i18n.config import MaterialI18nPluginConfig, LocaleConfig
+    from mkdocs_material_i18n.config import MaterialI18nPluginConfig
 
     plugin_config = MaterialI18nPluginConfig()
 
-    # Create single locale config
-    locale1 = LocaleConfig()
-    locale1.lang = "en"
-
-    plugin_config.locales = [locale1]
+    # Load single locale config
+    plugin_config.load_dict({"locales": [{"lang": "en"}]})
 
     errors, warnings = plugin_config.validate()
 
@@ -42,19 +39,14 @@ def test_empty_locales_warning():
 
 def test_no_warning_with_multiple_locales():
     """Test that no warning is shown when multiple locales are configured"""
-    from mkdocs_material_i18n.config import MaterialI18nPluginConfig, LocaleConfig
+    from mkdocs_material_i18n.config import MaterialI18nPluginConfig
 
     plugin_config = MaterialI18nPluginConfig()
 
-    # Create multiple locale configs
-    locale1 = LocaleConfig()
-    locale1.lang = "en"
-    locale2 = LocaleConfig()
-    locale2.lang = "zh"
-    locale3 = LocaleConfig()
-    locale3.lang = "fr"
-
-    plugin_config.locales = [locale1, locale2, locale3]
+    # Load multiple locale configs
+    plugin_config.load_dict(
+        {"locales": [{"lang": "en"}, {"lang": "zh"}, {"lang": "fr"}]}
+    )
 
     errors, warnings = plugin_config.validate()
 
