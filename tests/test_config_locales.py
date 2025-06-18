@@ -41,26 +41,6 @@ def test_plugin_with_locales():
     assert alternate[1]["lang"] == "en"
 
 
-def test_plugin_without_locales():
-    """Test that config is unchanged when no locales are configured"""
-    # Load config with empty locales
-    config = load_config(
-        "tests/mkdocs.yml",
-        plugins={
-            "i18n": {"locales": []},
-        },
-    )
-
-    plugin = config["plugins"]["i18n"]
-
-    # Call the method
-    original_config = config.copy()
-    result_config = plugin.on_config(config)
-
-    # Verify that config is unchanged
-    assert result_config == original_config
-
-
 def test_plugin_preserves_existing_extra():
     """Test that existing extra configuration is preserved"""
     # Load config with single locale
@@ -92,7 +72,6 @@ def test_plugin_preserves_existing_extra():
 def test_locale_validation_lang_required():
     """Test that lang field is required for each locale"""
     from mkdocs_material_i18n.config import LocaleConfig
-    from mkdocs.config.base import ValidationError
 
     locale_config = LocaleConfig()
     locale_config.name = "English"
@@ -103,8 +82,8 @@ def test_locale_validation_lang_required():
 
     # Should have validation error for missing lang
     assert len(errors) == 1
-    assert isinstance(errors[0], ValidationError)
-    assert "lang is required" in str(errors[0])
+    assert isinstance(errors[0], str)
+    assert "lang is required" in errors[0]
 
 
 def test_locale_validation_default_link():

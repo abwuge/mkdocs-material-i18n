@@ -2,7 +2,6 @@
 
 from mkdocs.config import base, config_options
 from mkdocs.config.defaults import MkDocsConfig
-from mkdocs.config.base import ValidationError
 
 
 class LocaleConfig(base.Config):
@@ -19,7 +18,7 @@ class LocaleConfig(base.Config):
 
         # lang is required
         if not self.lang:
-            errors.append(ValidationError("lang is required for each locale"))
+            errors.append("lang is required for each locale")
         else:
             # Set default link if not provided
             if not self.link:
@@ -45,10 +44,14 @@ class MaterialI18nPluginConfig(base.Config):
         # Call parent validation first
         errors, warnings = super().validate()
 
-        # Warn if locales count is less than 2
-        if len(self.locales) < 2:
+        locales_count = len(self.locales)
+        # Error if no locales configured
+        if locales_count == 0:
+            errors.append("At least 1 locale must be configured")
+        # Warn if only one locale configured
+        elif locales_count == 1:
             warnings.append(
-                "You have less than 2 locales configured. This plugin is designed for multi-language sites and may not be necessary for single-language sites."
+                "You have only 1 locale configured. This plugin is designed for multi-language sites and may not be necessary for single-language sites."
             )
 
         # Set default_locale to first locale's lang if not provided

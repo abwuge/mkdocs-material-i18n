@@ -3,16 +3,16 @@
 from mkdocs_material_i18n.config import MaterialI18nPluginConfig
 
 
-def test_empty_locales_warning():
-    """Test that warning is shown when no locales are configured"""
+def test_empty_locales_error():
+    """Test that error is shown when no locales are configured"""
     plugin_config = MaterialI18nPluginConfig()
     plugin_config.locales = []  # Empty locales
 
     errors, warnings = plugin_config.validate()
-    # Should have no errors but warning about less than 2 locales
-    assert len(errors) == 0
-    assert len(warnings) == 1
-    assert "less than 2 locales" in warnings[0]
+    # Should have error for no locales configured
+    assert len(errors) == 1
+    assert len(warnings) == 0
+    assert "At least 1 locale must be configured" in str(errors[0])
 
 
 def test_single_locale_warning():
@@ -22,10 +22,10 @@ def test_single_locale_warning():
     plugin_config.load_dict({"locales": [{"lang": "en"}]})
     errors, warnings = plugin_config.validate()
 
-    # Should have no errors but warning about less than 2 locales
+    # Should have no errors but warning about only 1 locale
     assert len(errors) == 0
     assert len(warnings) == 1
-    assert "less than 2 locales" in warnings[0]
+    assert "only 1 locale configured" in warnings[0]
 
 
 def test_no_warning_with_multiple_locales():

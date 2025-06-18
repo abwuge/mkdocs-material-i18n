@@ -15,25 +15,6 @@ def test_default_locale_auto_set():
     assert plugin_config.default_locale == "en"
 
 
-def test_default_locale_empty_locales():
-    """Test that default_locale remains empty when no locales are provided"""
-    # Load config with empty locales
-    config = load_config(
-        "tests/mkdocs.yml",
-        plugins={
-            "i18n": {
-                "locales": [],  # Empty locales
-            },
-        },
-    )
-
-    # Get plugin config
-    plugin_config = config["plugins"]["i18n"].config
-
-    # default_locale should remain empty
-    assert plugin_config.default_locale == ""
-
-
 def test_plugin_with_default_locale():
     """Test plugin integration with default_locale functionality"""
     # Load config with locales (default_locale should auto-set to "en")
