@@ -24,6 +24,7 @@ distribution = true
 
 [tool.pdm.scripts]
 test = {call = "tests.test:run_test"}
+serve = "mkdocs serve"
 
 [dependency-groups]
 dev = [
