@@ -41,29 +41,17 @@ class MaterialI18nPlugin(BasePlugin[MaterialI18nPluginConfig]):
     ) -> dict:
         """Called when the page context is created, allowing modification of template variables"""
 
-        if not self.language_manager:
-            return context
-
         # Set page language first
-        context = self.language_manager.modify_page_context(context, page, config)
+        if self.language_manager:
+            context = self.language_manager.modify_page_context(context, page, config)
 
         # Apply language-specific navigation if available
-        if self.navigation_manager and hasattr(self, "_files"):
-            language_nav = self.navigation_manager.build_navigation_for_page(
-                page, config, self._files
+        if self.navigation_manager:
+            context = self.navigation_manager.modify_page_context_navigation(
+                context, page, config, nav
             )
-            if language_nav:
-                context["nav"] = language_nav
-                log.debug(
-                    f"Applied language-specific navigation for page: {page.file.src_path}"
-                )
 
         return context
-
-    def on_files(self, files, config):
-        """Store files for later use in navigation building"""
-        self._files = files
-        return files
 
     def on_post_build(self, config: MkDocsConfig, **kwargs):
         """Called after the build process is complete"""
