@@ -4,11 +4,20 @@ theme:
   name: material
 
 plugins:
+  - search
   - i18n:
       locales:
         - name: 中文
           link: /zh/
           lang: zh
+          nav:
+            - 首页: zh/index.md
+            - 指南: zh/guide.md
+            - 文档: zh/docs.md
         - name: English
           link: /en/
           lang: en
+          nav:
+            - Home: en/index.md
+            - Guide: en/guide.md
+            - API Reference: en/api.md
