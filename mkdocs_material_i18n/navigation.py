@@ -1,11 +1,13 @@
 """Navigation management for MkDocs Material i18n Plugin"""
 
-from typing import Optional
-from pathlib import Path
-from mkdocs.structure.nav import Navigation
+from typing import Dict, List, Optional
+from mkdocs.structure.nav import Navigation, Section, Link
+from mkdocs.structure.pages import Page
 from mkdocs.structure.files import Files
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import get_plugin_logger
+
+from .config import LocaleConfig
 
 log = get_plugin_logger(__name__)
 
@@ -13,315 +15,122 @@ log = get_plugin_logger(__name__)
 class NavigationManager:
     """Manages language-specific navigation structures"""
 
-    def __init__(self, locales):
-        """
-        Initialize the navigation manager
-
-        Args:
-            locales: List of locale configurations from plugin config
-        """
+    def __init__(self, locales: List[LocaleConfig]):
         self.locales = locales
-        self.locale_navs = {}
+        self.language_navs: Dict[str, Navigation] = {}
+        self.original_nav: Optional[Navigation] = None
 
-        # Build navigation configurations for each locale
-        for locale in locales:
-            if locale.nav is not None:
-                self.locale_navs[locale.lang] = locale.nav
-                log.debug(f"Configured navigation for language '{locale.lang}'")
-
-    def has_language_navigation(self, language: str) -> bool:
-        """
-        Check if a specific language has custom navigation configured
-
-        Args:
-            language: Language code to check
-
-        Returns:
-            True if language has custom navigation, False otherwise
-        """
-        return language in self.locale_navs
-
-    def build_navigation_for_page(self, page, config: MkDocsConfig, files: Files) -> Optional[Navigation]:
-        """
-        Build navigation for a specific page based on its language
-
-        Args:
-            page: Current page being processed
-            config: MkDocs configuration
-            files: All files in the site
-
-        Returns:
-            Language-specific navigation or None if no custom nav
-        """
-        # Detect page language from file path
-        page_language = self._detect_page_language(page)
-
-        if not page_language or page_language not in self.locale_navs:
-            return None
-
-        # Get navigation config for this language
-        nav_config = self.locale_navs[page_language]
-
-        # Filter files to only include files from the same language
-        language_files = self._filter_files_for_language(files, page_language)
-
-        # Build navigation using MkDocs native method
-        temp_config = config
-        original_nav = temp_config.nav
-        temp_config.nav = nav_config
-
-        from mkdocs.structure.nav import get_navigation
-        language_nav = get_navigation(language_files, temp_config)
-
-        # Restore original nav
-        temp_config.nav = original_nav
-
-        log.debug(f"Built navigation for language '{page_language}' with {len(language_nav.pages)} pages")
-        return language_nav
-
-    def _detect_page_language(self, page) -> Optional[str]:
-        """Detect language from page file path"""
-        src_path = Path(page.file.src_path)
-        if not src_path.parts:
-            return None
-
-        first_dir = src_path.parts[0]
-
-        # Check if first directory matches any configured language
+    def build_language_navigations(self, nav: Navigation, files: Files, config: MkDocsConfig) -> None:
+        """Build navigation structures for each language"""
+        self.original_nav = nav
+        
+        # Create language-specific navigations
         for locale in self.locales:
-            lang_dir = locale.link.strip("/").split("/")[0]
-            if lang_dir == first_dir:
+            lang = locale.lang
+            language_nav = self._build_navigation_for_language(nav, files, config, locale)
+            self.language_navs[lang] = language_nav
+            log.debug(f"Built navigation for language: {lang}")
+
+    def _build_navigation_for_language(
+        self, 
+        original_nav: Navigation, 
+        files: Files, 
+        config: MkDocsConfig, 
+        locale: LocaleConfig
+    ) -> Navigation:
+        """Build navigation for a specific language"""
+        lang = locale.lang
+        
+        # If locale has custom nav configuration, use it
+        if locale.nav:
+            # Build navigation from locale's nav config
+            return self._build_nav_from_config(locale.nav, files, config, lang)
+        
+        # Otherwise, filter original navigation by language
+        filtered_items = self._filter_nav_items_by_language(original_nav.items, lang)
+        filtered_pages = self._filter_pages_by_language(original_nav.pages, lang)
+        
+        return Navigation(filtered_items, filtered_pages)
+
+    def _build_nav_from_config(self, nav_config, files: Files, config: MkDocsConfig, lang: str) -> Navigation:
+        """Build navigation from configuration (similar to MkDocs core logic)"""
+        from mkdocs.structure.nav import _data_to_navigation, _get_by_type, _add_previous_and_next_links, _add_parent_links
+        
+        # Convert nav config to navigation items
+        items = _data_to_navigation(nav_config, files, config)
+        if not isinstance(items, list):
+            items = [items]
+        
+        # Get only the pages from the navigation
+        pages = _get_by_type(items, Page)
+        
+        # Filter pages by language
+        pages = self._filter_pages_by_language(pages, lang)
+        
+        # Include next, previous and parent links
+        _add_previous_and_next_links(pages)
+        _add_parent_links(items)
+        
+        return Navigation(items, pages)
+
+    def _filter_nav_items_by_language(self, items: List, lang: str) -> List:
+        """Filter navigation items by language"""
+        filtered_items = []
+        
+        for item in items:
+            if isinstance(item, Page):
+                if self._page_matches_language(item, lang):
+                    filtered_items.append(item)
+            elif isinstance(item, Section):
+                # Recursively filter section children
+                filtered_children = self._filter_nav_items_by_language(item.children, lang)
+                if filtered_children:
+                    # Create new section with filtered children
+                    new_section = Section(item.title, filtered_children)
+                    new_section.active = item.active
+                    filtered_items.append(new_section)
+            elif isinstance(item, Link):
+                # Keep all links
+                filtered_items.append(item)
+        
+        return filtered_items
+
+    def _filter_pages_by_language(self, pages: List[Page], lang: str) -> List[Page]:
+        """Filter pages by language"""
+        return [page for page in pages if self._page_matches_language(page, lang)]
+
+    def _page_matches_language(self, page: Page, lang: str) -> bool:
+        """Check if a page belongs to the specified language"""
+        # Check if page URL starts with language prefix
+        if page.url.startswith(f"{lang}/") or page.url.startswith(f"/{lang}/"):
+            return True
+        
+        # Check if page file path contains language directory
+        if hasattr(page.file, 'src_uri'):
+            src_uri = page.file.src_uri
+            if src_uri.startswith(f"{lang}/") or f"/{lang}/" in src_uri:
+                return True
+        
+        return False
+
+    def get_navigation_for_language(self, lang: str) -> Optional[Navigation]:
+        """Get navigation for a specific language"""
+        return self.language_navs.get(lang)
+
+    def get_page_language(self, page: Page) -> Optional[str]:
+        """Determine the language of a page"""
+        for locale in self.locales:
+            if self._page_matches_language(page, locale.lang):
                 return locale.lang
-
         return None
 
-    def _filter_files_for_language(self, files: Files, language: str) -> Files:
-        """Filter files to only include files from specified language directory"""
-        # Find the language directory name
-        lang_dir = None
-        for locale in self.locales:
-            if locale.lang == language:
-                lang_dir = locale.link.strip("/").split("/")[0]
-                break
-
-        if not lang_dir:
-            return files
-
-        # Filter files that belong to this language
-        from mkdocs.structure.files import Files
-        filtered_files = Files([])
-
-        for file in files:
-            src_path = Path(file.src_path)
-            if src_path.parts and src_path.parts[0] == lang_dir:
-                filtered_files.append(file)
-
-        return filtered_files
-
-    def get_current_language_from_files(self, files: Files) -> Optional[str]:
-        """
-        Detect current build language based on files being processed
-
-        Args:
-            files: MkDocs Files collection
-
-        Returns:
-            Detected language code or None
-        """
-        # Check if files are under a language-specific directory
-        for file in files:
-            src_path = Path(file.src_path)
-            if src_path.parts:
-                first_dir = src_path.parts[0]
-                # Check if this matches any configured locale
-                for locale in self.locales:
-                    link_dir = locale.link.strip("/").split("/")[0]
-                    if link_dir == first_dir:
-                        return locale.lang
-
-        return None
-
-    def get_navigation_for_language(self, language: str) -> Optional[list]:
-        """
-        Get the navigation configuration for a specific language
-
-        Args:
-            language: Language code
-
-        Returns:
-            Navigation configuration list or None if no custom nav
-        """
-        return self.locale_navs.get(language)
-
-    def should_override_navigation(self, files: Files) -> tuple[bool, Optional[str]]:
-        """
-        Determine if navigation should be overridden for current build
-
-        Args:
-            files: MkDocs Files collection
-
-        Returns:
-            Tuple of (should_override, language_code)
-        """
-        current_language = self.get_current_language_from_files(files)
-
-        if current_language and self.has_language_navigation(current_language):
-            return True, current_language
-
-        return False, None
-
-    def filter_files_for_language(self, files: Files, language: str) -> Files:
-        """
-        Filter files collection to only include files for a specific language
-
-        Args:
-            files: MkDocs Files collection
-            language: Language code to filter for
-
-        Returns:
-            Filtered Files collection containing only files for the specified language
-        """
-        # Find the locale configuration for this language
-        locale = None
-        for loc in self.locales:
-            if loc.lang == language:
-                locale = loc
-                break
-
-        if not locale:
-            return files
-
-        # Extract language directory from locale link
-        lang_dir = locale.link.strip("/").split("/")[0]
-        if not lang_dir:
-            return files
-
-        # Create a new Files collection with only files from the language directory
-        from mkdocs.structure.files import Files
-
-        filtered_files = Files([])
-
-        for file in files:
-            src_path = Path(file.src_path)
-            if src_path.parts and src_path.parts[0] == lang_dir:
-                filtered_files.append(file)
-
-        return filtered_files
-
-    def modify_page_context_navigation(
-        self, context: dict, page, config: MkDocsConfig, nav
-    ) -> dict:
-        """
-        Modify page context to apply language-specific navigation if available
-
-        Args:
-            context: Template context dictionary
-            page: MkDocs Page instance
-            config: MkDocs configuration object
-            nav: Current navigation object
-
-        Returns:
-            Modified context dictionary with language-specific navigation if applicable
-        """
-        # Build language-specific navigation for the current page
-        language_nav = self.build_navigation_for_page_from_context(page, config, nav)
-
-        if language_nav:
-            context["nav"] = language_nav
-            log.debug(
-                f"Applied language-specific navigation for page: {page.file.src_path}"
-            )
-
+    def modify_navigation_context(self, context: dict, page: Page) -> dict:
+        """Modify the navigation context for a page"""
+        page_lang = self.get_page_language(page)
+        
+        if page_lang and page_lang in self.language_navs:
+            # Replace the navigation with language-specific navigation
+            context["nav"] = self.language_navs[page_lang]
+            log.debug(f"Set navigation for page {page.url} to language: {page_lang}")
+        
         return context
-
-    def build_navigation_for_page_from_context(self, page, config: MkDocsConfig, nav) -> Optional[Navigation]:
-        """
-        Build navigation for a specific page using context information instead of files collection
-
-        Args:
-            page: Current page being processed
-            config: MkDocs configuration
-            nav: Current navigation object
-
-        Returns:
-            Language-specific navigation or None if no custom nav
-        """
-        # Detect page language from file path
-        page_language = self._detect_page_language(page)
-
-        if not page_language or page_language not in self.locale_navs:
-            return None
-
-        # Get navigation config for this language
-        nav_config = self.locale_navs[page_language]
-
-        # Extract files from the current navigation to filter for language
-        language_files = self._extract_and_filter_nav_files(nav, page_language)
-
-        if not language_files:
-            return None
-
-        # Build navigation using MkDocs native method
-        temp_config = config
-        original_nav = temp_config.nav
-        temp_config.nav = nav_config
-
-        from mkdocs.structure.nav import get_navigation
-        language_nav = get_navigation(language_files, temp_config)
-
-        # Restore original nav
-        temp_config.nav = original_nav
-
-        log.debug(f"Built navigation for language '{page_language}' with {len(language_nav.pages)} pages")
-        return language_nav
-
-    def _extract_and_filter_nav_files(self, nav, language: str):
-        """
-        Extract files from navigation and filter for specific language
-
-        Args:
-            nav: Navigation object
-            language: Language code to filter for
-
-        Returns:
-            Filtered Files collection or None
-        """
-        try:
-            # Find the language directory name
-            lang_dir = None
-            for locale in self.locales:
-                if locale.lang == language:
-                    lang_dir = locale.link.strip("/").split("/")[0]
-                    break
-
-            if not lang_dir:
-                return None
-
-            # Extract all files from navigation pages
-            from mkdocs.structure.files import Files
-
-            all_files = Files([])
-
-            # Recursively collect files from navigation
-            def collect_files_from_nav(nav_item):
-                if hasattr(nav_item, 'file') and nav_item.file:
-                    all_files.append(nav_item.file)
-                elif hasattr(nav_item, 'children'):
-                    for child in nav_item.children:
-                        collect_files_from_nav(child)
-
-            for item in nav:
-                collect_files_from_nav(item)
-
-            # Filter files for the specific language
-            filtered_files = Files([])
-            for file in all_files:
-                src_path = Path(file.src_path)
-                if src_path.parts and src_path.parts[0] == lang_dir:
-                    filtered_files.append(file)
-
-            return filtered_files if len(filtered_files) > 0 else None
-
-        except Exception as e:
-            log.warning(f"Failed to extract and filter navigation files: {e}")
-            return None

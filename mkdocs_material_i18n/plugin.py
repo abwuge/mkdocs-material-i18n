@@ -36,6 +36,16 @@ class MaterialI18nPlugin(BasePlugin[MaterialI18nPluginConfig]):
 
         return config
 
+    def on_nav(self, nav: Navigation, config: MkDocsConfig, files) -> Navigation:
+        """Called when the navigation is created, build language-specific navigations"""
+
+        if self.navigation_manager:
+            # Build navigation structures for each language
+            self.navigation_manager.build_language_navigations(nav, files, config)
+            log.debug("Built language-specific navigations")
+
+        return nav
+
     def on_page_context(
         self, context: dict, page: Page, config: MkDocsConfig, nav: Navigation
     ) -> dict:
@@ -45,11 +55,9 @@ class MaterialI18nPlugin(BasePlugin[MaterialI18nPluginConfig]):
         if self.language_manager:
             context = self.language_manager.modify_page_context(context, page, config)
 
-        # Apply language-specific navigation if available
+        # Modify navigation based on page language
         if self.navigation_manager:
-            context = self.navigation_manager.modify_page_context_navigation(
-                context, page, config, nav
-            )
+            context = self.navigation_manager.modify_navigation_context(context, page)
 
         return context
 
