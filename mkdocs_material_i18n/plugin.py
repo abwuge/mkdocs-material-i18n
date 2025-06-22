@@ -6,9 +6,10 @@ from mkdocs.structure.pages import Page
 from mkdocs.structure.nav import Navigation
 
 from .config import MaterialI18nPluginConfig
-from .index import IndexPageGenerator
-from .language import LanguageContextManager
+from .index import IndexPageManager
+from .language import LanguageManager
 from .navigation import NavigationManager
+from .locale_mapper import get_locale_mapper
 
 log = get_plugin_logger(__name__)
 
@@ -28,7 +29,11 @@ class MaterialI18nPlugin(BasePlugin[MaterialI18nPluginConfig]):
         config = self.config.process_locales_config(config)
 
         if self.config.locales:
-            self.language_manager = LanguageContextManager(self.config.locales)
+            # Initialize the locale mapper singleton first
+            locale_mapper = get_locale_mapper()
+            locale_mapper.initialize(self.config.locales)
+
+            self.language_manager = LanguageManager(self.config.locales)
             self.navigation_manager = NavigationManager(self.config.locales)
             log.debug(
                 f"Automatically configured {len(self.config.locales)} language options for Material theme"
@@ -67,7 +72,7 @@ class MaterialI18nPlugin(BasePlugin[MaterialI18nPluginConfig]):
             return
 
         # Create index page generator
-        index_generator = IndexPageGenerator(
+        index_generator = IndexPageManager(
             self.config.locales, self.config.default_locale
         )
 

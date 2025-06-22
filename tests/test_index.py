@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from mkdocs.config.defaults import MkDocsConfig
 
 from mkdocs_material_i18n.config import LocaleConfig
-from mkdocs_material_i18n.index import IndexPageGenerator, DEFAULT_INDEX_TEMPLATE
+from mkdocs_material_i18n.index import IndexPageManager, DEFAULT_INDEX_TEMPLATE
 
 
 def create_test_locale(name: str, link: str, lang: str) -> LocaleConfig:
@@ -24,7 +24,7 @@ def test_index_page_generator_initialization():
     default_locale = locale_en
 
     # Initialize generator
-    generator = IndexPageGenerator([locale_en, locale_zh], default_locale)
+    generator = IndexPageManager([locale_en, locale_zh], default_locale)
 
     assert generator.locales == [locale_en, locale_zh]
     assert generator.default_locale == default_locale
@@ -34,7 +34,7 @@ def test_generate_language_map_basic():
     """Test basic language map generation"""
     locale_en = create_test_locale("English", "/en/", "en")
     locale_zh = create_test_locale("中文", "/zh/", "zh")
-    generator = IndexPageGenerator([locale_en, locale_zh], locale_en)
+    generator = IndexPageManager([locale_en, locale_zh], locale_en)
 
     language_map = generator.generate_language_map()
 
@@ -50,14 +50,16 @@ def test_generate_language_map_with_hyphenated_langs():
     """Test language map generation with hyphenated language codes"""
     locale_en_us = create_test_locale("English (US)", "/en-us/", "en-US")
     locale_zh_cn = create_test_locale("简体中文", "/zh-cn/", "zh-CN")
-    generator = IndexPageGenerator([locale_en_us, locale_zh_cn], locale_en_us)
+    generator = IndexPageManager([locale_en_us, locale_zh_cn], locale_en_us)
 
     language_map = generator.generate_language_map()
 
     # Should contain both full and base language codes
     assert '"en-us": "/en-us/"' in language_map
     assert '"zh-cn": "/zh-cn/"' in language_map
-    assert '"en": "/en-us/"' in language_map  # Base language should map to first occurrence
+    assert (
+        '"en": "/en-us/"' in language_map
+    )  # Base language should map to first occurrence
     assert '"zh": "/zh-cn/"' in language_map
 
 
@@ -65,7 +67,7 @@ def test_generate_language_map_base_lang_priority():
     """Test that base language mapping respects the first occurrence"""
     locale_en_us = create_test_locale("English (US)", "/en-us/", "en-US")
     locale_en_gb = create_test_locale("English (UK)", "/en-gb/", "en-GB")
-    generator = IndexPageGenerator([locale_en_us, locale_en_gb], locale_en_us)
+    generator = IndexPageManager([locale_en_us, locale_en_gb], locale_en_us)
 
     language_map = generator.generate_language_map()
 
@@ -79,13 +81,13 @@ def test_generate_default_index_html():
     """Test default index.html generation"""
     locale_en = create_test_locale("English", "/en/", "en")
     locale_zh = create_test_locale("中文", "/zh/", "zh")
-    generator = IndexPageGenerator([locale_en, locale_zh], locale_en)
+    generator = IndexPageManager([locale_en, locale_zh], locale_en)
 
     html_content = generator.generate_default_index_html()
 
     # Should be valid HTML
     assert html_content.startswith("<!DOCTYPE html>")
-    assert "<html lang=\"en\">" in html_content
+    assert '<html lang="en">' in html_content
     assert "</html>" in html_content
 
     # Should contain language redirection JavaScript
@@ -95,14 +97,14 @@ def test_generate_default_index_html():
 
     # Should contain default locale information
     assert "/en/" in html_content  # Default locale link
-    assert "en" in html_content    # Default locale lang
+    assert "en" in html_content  # Default locale lang
 
 
 def test_generate_default_index_html_template_formatting():
     """Test that the generated HTML properly formats template variables"""
     locale_fr = create_test_locale("Français", "/fr/", "fr")
     locale_de = create_test_locale("Deutsch", "/de/", "de")
-    generator = IndexPageGenerator([locale_fr, locale_de], locale_fr)
+    generator = IndexPageManager([locale_fr, locale_de], locale_fr)
 
     html_content = generator.generate_default_index_html()
 
@@ -112,7 +114,7 @@ def test_generate_default_index_html_template_formatting():
     assert "{language_map}" not in html_content
 
     # Check that actual values are present
-    assert "content=\"3;url=/fr/\"" in html_content
+    assert 'content="3;url=/fr/"' in html_content
     assert '"fr": "/fr/"' in html_content
     assert '"de": "/de/"' in html_content
 
@@ -124,7 +126,7 @@ def test_get_custom_index_template_no_custom_dir():
     config.theme.custom_dir = None
 
     locale_en = create_test_locale("English", "/en/", "en")
-    generator = IndexPageGenerator([locale_en], locale_en)
+    generator = IndexPageManager([locale_en], locale_en)
 
     custom_template = generator.get_custom_index_template(config)
     assert custom_template is None
@@ -138,7 +140,7 @@ def test_get_custom_index_template_no_index_file():
         config.theme.custom_dir = temp_dir
 
         locale_en = create_test_locale("English", "/en/", "en")
-        generator = IndexPageGenerator([locale_en], locale_en)
+        generator = IndexPageManager([locale_en], locale_en)
 
         custom_template = generator.get_custom_index_template(config)
         assert custom_template is None
@@ -158,13 +160,13 @@ def test_get_custom_index_template_with_custom_file():
         config.theme.custom_dir = temp_dir
 
         locale_en = create_test_locale("English", "/en/", "en")
-        generator = IndexPageGenerator([locale_en], locale_en)
+        generator = IndexPageManager([locale_en], locale_en)
 
         custom_template = generator.get_custom_index_template(config)
         assert custom_template == custom_content
 
 
-@patch('mkdocs_material_i18n.index.log')
+@patch("mkdocs_material_i18n.index.log")
 def test_get_custom_index_template_read_error(mock_log):
     """Test custom template retrieval handles file read errors gracefully"""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -178,10 +180,10 @@ def test_get_custom_index_template_read_error(mock_log):
         config.theme.custom_dir = temp_dir
 
         locale_en = create_test_locale("English", "/en/", "en")
-        generator = IndexPageGenerator([locale_en], locale_en)
+        generator = IndexPageManager([locale_en], locale_en)
 
         # Mock open to raise an exception
-        with patch('builtins.open', side_effect=IOError("Permission denied")):
+        with patch("builtins.open", side_effect=IOError("Permission denied")):
             custom_template = generator.get_custom_index_template(config)
             assert custom_template is None
             mock_log.warning.assert_called_once()
@@ -197,7 +199,7 @@ def test_create_index_file_with_default_template():
 
         locale_en = create_test_locale("English", "/en/", "en")
         locale_zh = create_test_locale("中文", "/zh/", "zh")
-        generator = IndexPageGenerator([locale_en, locale_zh], locale_en)
+        generator = IndexPageManager([locale_en, locale_zh], locale_en)
 
         # Create index file
         result = generator.create_index_file(config)
@@ -236,7 +238,7 @@ def test_create_index_file_with_custom_template():
         config.theme.custom_dir = theme_dir
 
         locale_en = create_test_locale("English", "/en/", "en")
-        generator = IndexPageGenerator([locale_en], locale_en)
+        generator = IndexPageManager([locale_en], locale_en)
 
         # Create index file
         result = generator.create_index_file(config)
@@ -251,7 +253,7 @@ def test_create_index_file_with_custom_template():
         assert content == custom_content
 
 
-@patch('mkdocs_material_i18n.index.log')
+@patch("mkdocs_material_i18n.index.log")
 def test_create_index_file_write_error(mock_log):
     """Test index file creation handles write errors gracefully"""
     config = Mock(spec=MkDocsConfig)
@@ -260,7 +262,7 @@ def test_create_index_file_write_error(mock_log):
     config.theme.custom_dir = None
 
     locale_en = create_test_locale("English", "/en/", "en")
-    generator = IndexPageGenerator([locale_en], locale_en)
+    generator = IndexPageManager([locale_en], locale_en)
 
     # Attempt to create index file (should fail due to nonexistent directory)
     result = generator.create_index_file(config)
@@ -268,7 +270,7 @@ def test_create_index_file_write_error(mock_log):
     mock_log.error.assert_called_once()
 
 
-@patch('mkdocs_material_i18n.index.log')
+@patch("mkdocs_material_i18n.index.log")
 def test_create_index_file_no_content_warning(mock_log):
     """Test that warning is logged when no HTML content is generated"""
     config = Mock(spec=MkDocsConfig)
@@ -277,13 +279,15 @@ def test_create_index_file_no_content_warning(mock_log):
     config.theme.custom_dir = None
 
     locale_en = create_test_locale("English", "/en/", "en")
-    generator = IndexPageGenerator([locale_en], locale_en)
+    generator = IndexPageManager([locale_en], locale_en)
 
     # Mock generate_default_index_html to return empty content
-    with patch.object(generator, 'generate_default_index_html', return_value=""):
+    with patch.object(generator, "generate_default_index_html", return_value=""):
         result = generator.create_index_file(config)
         assert result is False
-        mock_log.warning.assert_called_once_with("No HTML content generated for index.html")
+        mock_log.warning.assert_called_once_with(
+            "No HTML content generated for index.html"
+        )
 
 
 def test_default_index_template_structure():
@@ -295,9 +299,9 @@ def test_default_index_template_structure():
 
     # Verify basic HTML structure
     assert "<!DOCTYPE html>" in DEFAULT_INDEX_TEMPLATE
-    assert "<html lang=\"en\">" in DEFAULT_INDEX_TEMPLATE
-    assert "<meta charset=\"UTF-8\"" in DEFAULT_INDEX_TEMPLATE
-    assert "<meta http-equiv=\"refresh\"" in DEFAULT_INDEX_TEMPLATE
+    assert '<html lang="en">' in DEFAULT_INDEX_TEMPLATE
+    assert '<meta charset="UTF-8"' in DEFAULT_INDEX_TEMPLATE
+    assert '<meta http-equiv="refresh"' in DEFAULT_INDEX_TEMPLATE
     assert "<script>" in DEFAULT_INDEX_TEMPLATE
     assert "navigator.language" in DEFAULT_INDEX_TEMPLATE
     assert "window.location.href" in DEFAULT_INDEX_TEMPLATE
@@ -320,7 +324,7 @@ def test_integration_full_workflow():
         ]
         default_locale = locales[0]
 
-        generator = IndexPageGenerator(locales, default_locale)
+        generator = IndexPageManager(locales, default_locale)
 
         # Test complete workflow
         result = generator.create_index_file(config)

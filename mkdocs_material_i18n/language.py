@@ -1,14 +1,15 @@
 """Language detection and context management for MkDocs Material i18n Plugin"""
 
-from pathlib import Path
 from mkdocs.structure.pages import Page
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import get_plugin_logger
 
+from .locale_mapper import get_locale_mapper
+
 log = get_plugin_logger(__name__)
 
 
-class LanguageContextManager:
+class LanguageManager:
     """Manages language detection and context modification for pages"""
 
     def __init__(self, locales):
@@ -19,13 +20,7 @@ class LanguageContextManager:
             locales: List of locale configurations from plugin config
         """
         self.locales = locales
-        # Build link to lang mapping table for fast lookup
-        self.link_to_lang = {}
-        for locale in locales:
-            # Extract the first level directory from link
-            link_dir = locale.link.strip("/").split("/")[0]
-            if link_dir:  # Only add non-empty directories
-                self.link_to_lang[link_dir] = locale.lang
+        self.locale_mapper = get_locale_mapper()
 
     def detect_page_language(self, page: Page) -> str:
         """
@@ -37,11 +32,7 @@ class LanguageContextManager:
         Returns:
             Language code string or None if not detected
         """
-        # Get the source path of the page
-        src_path = page.file.src_path
-
-        first_dir = Path(src_path).parts[0] if Path(src_path).parts else None
-        return self.link_to_lang.get(first_dir) if first_dir else None
+        return self.locale_mapper.detect_lang_from_path(page.file.src_path)
 
     def modify_page_context(
         self, context: dict, page: Page, config: MkDocsConfig

@@ -88,61 +88,73 @@ def test_default_locale_auto_set():
 def test_default_locale_lang_mismatch_error_1():
     """Test error when default_locale.lang doesn't match default_lang"""
     plugin_config = MaterialI18nPluginConfig()
-    plugin_config.load_dict({
-        "locales": [
-            {"lang": "en", "name": "English"},
-            {"lang": "zh", "name": "中文"},
-        ],
-        "default_lang": "en",
-        "default_locale": {
-            "lang": "en",
-            "name": "English (Custom)",
-            "link": "/en-custom/"
-        },
-    })
-    
+    plugin_config.load_dict(
+        {
+            "locales": [
+                {"lang": "en", "name": "English"},
+                {"lang": "zh", "name": "中文"},
+            ],
+            "default_lang": "en",
+            "default_locale": {
+                "lang": "en",
+                "name": "English (Custom)",
+                "link": "/en-custom/",
+            },
+        }
+    )
+
     errors, warnings = plugin_config.validate()
-    
+
     # Should have error for mismatched default_locale
     assert len(errors) == 1
-    assert "Default locale does not match configured default_lang related locale" in str(errors[0])
+    assert (
+        "Default locale does not match configured default_lang related locale"
+        in str(errors[0])
+    )
 
 
 def test_default_locale_lang_mismatch_error_2():
     """Test error when default_locale.lang doesn't match default_lang"""
     plugin_config = MaterialI18nPluginConfig()
-    plugin_config.load_dict({
-        "locales": [
-            {"lang": "en", "name": "English"},
-            {"lang": "zh", "name": "中文"},
-        ],
-        "default_lang": "en",
-        "default_locale": {
-            "lang": "zh",  # Mismatched lang
-            "name": "Chinese",
-        },
-    })
-    
+    plugin_config.load_dict(
+        {
+            "locales": [
+                {"lang": "en", "name": "English"},
+                {"lang": "zh", "name": "中文"},
+            ],
+            "default_lang": "en",
+            "default_locale": {
+                "lang": "zh",  # Mismatched lang
+                "name": "Chinese",
+            },
+        }
+    )
+
     errors, warnings = plugin_config.validate()
-    
+
     # Should have error for mismatched lang
     assert len(errors) == 1
-    assert "Default locale does not match configured default_lang related locale" in str(errors[0])
+    assert (
+        "Default locale does not match configured default_lang related locale"
+        in str(errors[0])
+    )
 
 
 def test_default_lang_not_in_locales_error():
     """Test error when default_lang doesn't match any locale"""
     plugin_config = MaterialI18nPluginConfig()
-    plugin_config.load_dict({
-        "locales": [
-            {"lang": "en", "name": "English"},
-            {"lang": "zh", "name": "中文"},
-        ],
-        "default_lang": "fr",  # Not in locales
-    })
-    
+    plugin_config.load_dict(
+        {
+            "locales": [
+                {"lang": "en", "name": "English"},
+                {"lang": "zh", "name": "中文"},
+            ],
+            "default_lang": "fr",  # Not in locales
+        }
+    )
+
     errors, warnings = plugin_config.validate()
-    
+
     # Should have error for default_lang not matching any locale
     assert len(errors) == 1
     assert "does not match any configured locale's lang" in str(errors[0])

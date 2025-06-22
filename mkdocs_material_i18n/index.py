@@ -43,7 +43,7 @@ DEFAULT_INDEX_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
-class IndexPageGenerator:
+class IndexPageManager:
     """Handles generation of the root index.html page for multi-language sites"""
 
     def __init__(self, locales: List[LocaleConfig], default_locale: LocaleConfig):
