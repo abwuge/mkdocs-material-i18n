@@ -10,6 +10,7 @@ class LocaleConfig(base.Config):
     name = config_options.Type(str, default="")
     link = config_options.Type(str, default="")
     lang = config_options.Type(str, default="")
+    site_name = config_options.Type(str, default="")
     nav = config_options.Nav(default=None)
 
     def validate(self):

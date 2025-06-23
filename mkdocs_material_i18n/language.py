@@ -32,6 +32,7 @@ class LanguageManager:
         Returns:
             Language code string or None if not detected
         """
+
         return self.locale_mapper.detect_lang_from_path(page.file.src_path)
 
     def modify_page_context(
@@ -48,13 +49,19 @@ class LanguageManager:
         Returns:
             Modified context dictionary
         """
-        # Determine the current page's language based on its file path
-        current_language = self.detect_page_language(page)
-        if current_language:
+
+        # Get the current page's locale configuration directly
+        current_locale = self.locale_mapper.detect_locale_from_path(page.file.src_path)
+        if current_locale:
             # Directly modify the config theme language for this page
-            config.theme.language = (
-                current_language  # Update alternate links for current page
-            )
+            config.theme.language = current_locale.lang
+
+            # Set the localized site_name if configured
+            if current_locale.site_name:
+                config.site_name = current_locale.site_name
+                log.debug(
+                    f"Set site_name to '{current_locale.site_name}' for language '{current_locale.lang}'"
+                )
 
             current_url = page.url
             url_parts = current_url.strip("/").split("/")
@@ -62,11 +69,10 @@ class LanguageManager:
                 path_without_lang = "/".join(url_parts[1:]) + "/"
             else:
                 path_without_lang = ""
-
             for alt in config.extra["alternate"]:
                 alt["link"] = "/" + alt["link"].split("/")[1] + "/" + path_without_lang
                 log.debug(
-                    f"Set language '{current_language}' for page: {page.file.src_path}"
+                    f"Set language '{current_locale.lang}' for page: {page.file.src_path}"
                 )
 
         return context

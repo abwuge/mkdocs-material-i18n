@@ -10,6 +10,7 @@ plugins:
         - name: 中文
           link: /zh/
           lang: zh
+          site_name: MkDocs Material 国际化插件
           nav:
             - 首页: zh/index.md
             - 指南: zh/guide.md
@@ -17,6 +18,7 @@ plugins:
         - name: English
           link: /en/
           lang: en
+          site_name: MkDocs Material i18n Plugin
           nav:
             - Home: en/index.md
             - Guide: en/guide.md
