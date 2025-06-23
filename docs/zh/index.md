@@ -1,17 +1,8 @@
-# 欢迎使用 MkDocs
+# 欢迎使用 MkDocs Material I18n Plugin
 
-完整文档请访问 [mkdocs.org](https://www.mkdocs.org)。
+此插件为 MkDocs Material 提供了增强的国际化支持。包括但不限于
 
-## 命令
-
-* `mkdocs new [dir-name]` - 创建一个新项目。
-* `mkdocs serve` - 启动实时重载的文档服务器。
-* `mkdocs build` - 构建文档站点。
-* `mkdocs -h` - 打印帮助信息并退出。
-
-## 项目结构
-
-    mkdocs.yml    # 配置文件。
-    docs/
-        index.md  # 文档首页。
-        ...       # 其他 markdown 页面、图片和其他文件。
+- 基于用户语言自动选择文档语言
+- 多语言独立导航
+- 多语言独立站点名称
+- 语言切换器停留在当前页面

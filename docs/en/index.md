@@ -1,17 +1,8 @@
-# Welcome to MkDocs
+# Welcome to MkDocs Material I18n Plugin
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+This plugin provides enhanced i18n support for MkDocs Material, including but not limited to:
 
-## Commands
-
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
-
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+- Automatic language selection based on user language
+- Independent navigation for multiple languages
+- Independent site names for multiple languages
+- Language switcher stays on the current page
