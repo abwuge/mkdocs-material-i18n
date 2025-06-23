@@ -2,4 +2,4 @@
 applyTo: '**'
 ---
 
-There might be a problem while using replace command, which sometimes cause formatting errors. Simply ignore them, the user will handle them.
+Ignore any formatting errors caused by the modification. (i.e. indentation errors, etc.)

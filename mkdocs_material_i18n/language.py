@@ -50,13 +50,23 @@ class LanguageManager:
         """
         # Determine the current page's language based on its file path
         current_language = self.detect_page_language(page)
-
         if current_language:
             # Directly modify the config theme language for this page
-            config.theme.language = current_language
-
-            log.debug(
-                f"Set language '{current_language}' for page: {page.file.src_path}"
+            config.theme.language = (
+                current_language  # Update alternate links for current page
             )
+
+            current_url = page.url
+            url_parts = current_url.strip("/").split("/")
+            if len(url_parts) > 1:
+                path_without_lang = "/".join(url_parts[1:]) + "/"
+            else:
+                path_without_lang = ""
+
+            for alt in config.extra["alternate"]:
+                alt["link"] = "/" + alt["link"].split("/")[1] + "/" + path_without_lang
+                log.debug(
+                    f"Set language '{current_language}' for page: {page.file.src_path}"
+                )
 
         return context
