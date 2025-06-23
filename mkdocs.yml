@@ -12,14 +12,14 @@ plugins:
           lang: zh
           site_name: MkDocs Material 国际化插件
           nav:
-            - 首页: zh/index.md
-            - 指南: zh/guide.md
-            - 文档: zh/docs.md
+            - 首页: index.md
+            - 指南: guide.md
+            - 文档: docs.md
         - name: English
           link: /en/
           lang: en
           site_name: MkDocs Material i18n Plugin
           nav:
-            - Home: en/index.md
-            - Guide: en/guide.md
-            - API Reference: en/api.md
+            - Home: index.md
+            - Guide: guide.md
+            - API Reference: api.md

@@ -30,7 +30,18 @@ class LocaleConfig(base.Config):
             if not self.name:
                 self.name = self.lang
 
+            # Add language prefix to nav paths
+            if self.nav:
+                self.nav = self._add_lang_prefix(self.nav)
+
         return errors, warnings
+
+    def _add_lang_prefix(self, nav):
+        """Add language prefix to navigation paths"""
+        for item in nav:
+            for title, path in item.items():
+                item[title] = f"{self.link.strip('/')}/{path}"
+        return nav
 
 
 class MaterialI18nPluginConfig(base.Config):
