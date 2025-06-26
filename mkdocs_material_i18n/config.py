@@ -38,10 +38,38 @@ class LocaleConfig(base.Config):
 
     def _add_lang_prefix(self, nav):
         """Add language prefix to navigation paths"""
-        for item in nav:
-            for title, path in item.items():
-                item[title] = f"{self.link.strip('/')}/{path}"
-        return nav
+        return self._process_nav_items(nav)
+    
+    def _process_nav_items(self, nav_items):
+        """Recursively process navigation items to add language prefix"""
+        if not nav_items:
+            return nav_items
+            
+        processed_items = []
+        
+        for item in nav_items:
+            if isinstance(item, dict):
+                # Handle dictionary items (title: path or title: [sub-items])
+                processed_item = {}
+                for title, content in item.items():
+                    if isinstance(content, str):
+                        # Simple case: title: path
+                        processed_item[title] = f"{self.link.strip('/')}/{content}"
+                    elif isinstance(content, list):
+                        # Nested case: title: [sub-items]
+                        processed_item[title] = self._process_nav_items(content)
+                    else:
+                        # Keep other types as-is
+                        processed_item[title] = content
+                processed_items.append(processed_item)
+            elif isinstance(item, str):
+                # Handle direct string paths
+                processed_items.append(f"{self.link.strip('/')}/{item}")
+            else:
+                # Keep other types as-is
+                processed_items.append(item)
+                
+        return processed_items
 
 
 class MaterialI18nPluginConfig(base.Config):
